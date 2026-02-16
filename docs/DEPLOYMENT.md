@@ -43,9 +43,18 @@ Go to **Variables** and add:
 
 | Variable | Value |
 |----------|-------|
-| `DATABASE_URL` | Your Supabase connection string (e.g. `postgresql://postgres:...@db.xxx.supabase.co:5432/postgres?sslmode=require`) |
+| `DATABASE_URL` | **Use Supabase Connection Pooler (see below)** — required for Railway |
 | `SECRET_KEY` | A strong random string (32+ chars) |
 | `CORS_ORIGINS` | `https://your-app.vercel.app,http://localhost:5173` *(update after you get your Vercel URL)* |
+
+**Supabase DATABASE_URL for Railway (required):** Railway does not support IPv6. Supabase’s direct connection (port 5432) uses IPv6 and will fail with “Network is unreachable”. Use the **Connection Pooler** instead:
+
+1. In Supabase: **Project Settings** → **Database**
+2. Under **Connection string** → **Connection pooling**, select **Transaction** mode
+3. Copy the URI (port **6543**) — format:  
+   `postgresql://postgres.[PROJECT-REF]:[PASSWORD]@aws-0-[REGION].pooler.supabase.com:6543/postgres`  
+   (not the direct `db.xxx.supabase.co:5432` URI)
+4. Add `?sslmode=require` if missing
 
 ### 5. Deploy
 
@@ -128,4 +137,4 @@ In **Environment Variables**, add:
 | CORS errors | Ensure `CORS_ORIGINS` includes your exact Vercel URL (with `https://`) |
 | 401 / Auth fails | Ensure `SECRET_KEY` is set on Railway and matches between deployments |
 | Blank page | Confirm `VITE_API_URL` is set on Vercel and points to the Railway backend |
-| DB connection fails | Check `DATABASE_URL` on Railway; ensure Supabase allows connections from Railway IPs if restricted |
+| DB connection fails / "Network is unreachable" | Use Supabase **Connection Pooler** (port 6543), not direct (5432). Railway doesn't support IPv6; the pooler uses IPv4. |

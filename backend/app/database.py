@@ -1,17 +1,22 @@
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 from app.config import get_settings
 
 settings = get_settings()
+db_url = settings.DATABASE_URL or ""
 
-# Supabase requires SSL; add connect_args when using Supabase
+# Supabase: SSL and NullPool for connection pooler (port 6543)
 engine_args = {}
-if "supabase" in (settings.DATABASE_URL or "").lower():
+if "supabase" in db_url.lower():
     engine_args["connect_args"] = {"sslmode": "require"}
+    if "pooler.supabase.com" in db_url or ":6543" in db_url:
+        # Transaction-mode pooler: use NullPool per Supabase docs
+        engine_args["poolclass"] = NullPool
 
 engine = create_engine(
-    settings.DATABASE_URL,
+    db_url,
     **engine_args,
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
