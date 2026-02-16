@@ -1,5 +1,9 @@
-from fastapi import FastAPI
+import re
+
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+
 from app.config import get_settings
 from app.database import engine
 from app import models
@@ -12,6 +16,32 @@ settings = get_settings()
 app = FastAPI(title="Annuities Analysis API", version="1.0.0")
 
 origins_list = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
+vercel_regex = re.compile(r"^https://.*\.vercel\.app$")
+
+
+def _is_allowed_origin(origin: str) -> bool:
+    if origin in origins_list:
+        return True
+    if vercel_regex.fullmatch(origin):
+        return True
+    return False
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """Ensure 500 responses include CORS headers so the browser shows the real error."""
+    origin = request.headers.get("origin", "")
+    headers = {}
+    if origin and _is_allowed_origin(origin):
+        headers["Access-Control-Allow-Origin"] = origin
+        headers["Access-Control-Allow-Credentials"] = "true"
+    return JSONResponse(
+        status_code=500,
+        content={"detail": "Internal server error"},
+        headers=headers,
+    )
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins_list,
