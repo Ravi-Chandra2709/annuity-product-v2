@@ -11,9 +11,11 @@ from app.api import auth, products, calculators, comparisons, illustrations, cli
 settings = get_settings()
 app = FastAPI(title="Annuities Analysis API", version="1.0.0")
 
+origins_list = [o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in settings.CORS_ORIGINS.split(",") if o.strip()],
+    allow_origins=origins_list,
+    allow_origin_regex=r"https://.*\.vercel\.app",  # Allow any Vercel deployment
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
